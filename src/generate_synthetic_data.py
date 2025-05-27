@@ -1,36 +1,64 @@
-import openai
 import json
 import random
 import time
+from openai import OpenAI
 
-openai.api_key = "your-openai-api-key"  # Replace with your actual API key
+# Put your OpenAI API key here
+api_key = "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"
 
-# Example restrictions and meal types (add more for variety)
+# Initialize OpenAI client
+client = OpenAI(api_key=api_key)
+
 dietary_restrictions = [
-    "vegan", "gluten-free", "keto", "nut-free",
-    "dairy-free", "low-sugar", "vegetarian", "pescatarian"
+    "vegan", "vegetarian", "pescatarian", "gluten-free", "dairy-free", "nut-free",
+    "egg-free", "soy-free", "low-sugar", "low-sodium", "keto", "paleo", "halal", "kosher",
+    "low-carb", "high-protein", "diabetic-friendly", "heart-healthy", "anti-inflammatory",
+    "low-FODMAP", "raw", "whole30", "Mediterranean", "plant-based", "lactose-intolerant",
+    "sugar-free", "wheat-free", "corn-free", "shellfish-free", "peanut-free", "tree-nut-free",
+    "nightshade-free", "low-cholesterol", "renal-diet", "macrobiotic", "alkaline",
+    "clean-eating", "organic", "locally-sourced", "non-GMO", "MSG-free", "preservative-free",
+    "low-fat", "zero-fat", "high-fiber", "low-fiber", "fructose-free", "casein-free",
+    "histamine-free", "glucose-free", "carnivore", "flexitarian", "dairy-limited", 
+    "spice-sensitive", "fermentation-free", "grain-free", "oat-free", "barley-free", 
+    "rye-free", "celiac-safe", "gastroparesis-friendly", "ulcer-friendly", "acid-reflux-safe", 
+    "GERD-safe", "gallbladder-safe", "sulfite-free", "salicylate-free", "low-purine", 
+    "low-oxalate", "low-tyramine", "low-histamine", "low-lectin", "lectin-free"
 ]
 
 meal_types = ["breakfast", "lunch", "dinner", "snack", "dessert"]
 
-# Output file
-output_file = "synthetic_recipes.jsonl"
-samples_to_generate = 10000
+output_file = "improved_synthetic_recipes.jsonl"
+samples_to_generate = 10000  # updated to 10,000 samples
 
-# Temperature controls creativity (0.7 is balanced)
 temperature = 0.7
-max_tokens = 300
+max_tokens = 350
+
+def format_restrictions(restrictions):
+    if len(restrictions) == 1:
+        return restrictions[0]
+    elif len(restrictions) == 2:
+        return f"{restrictions[0]} and {restrictions[1]}"
+    else:
+        return ", ".join(restrictions[:-1]) + f", and {restrictions[-1]}"
+
+print("Script started...")
+print(f"Generating {samples_to_generate} synthetic recipes...")
 
 for i in range(samples_to_generate):
-    restriction = random.choice(dietary_restrictions)
-    meal = random.choice(meal_types)
-
-    # Create a natural user-style prompt
-    prompt = f"I follow a {restriction} diet. Can you recommend a {meal}?"
-
     try:
-        # Generate response
-        response = openai.ChatCompletion.create(
+        restrictions = random.sample(dietary_restrictions, k=random.randint(1, len(dietary_restrictions)))
+        restriction_text = format_restrictions(restrictions)
+        meal = random.choice(meal_types)
+
+        prompt = (
+            f"I follow a diet that is {restriction_text}. "
+            f"Can you recommend a {meal} recipe that meets all of these dietary restrictions? "
+            "Please be specific and detailed."
+        )
+
+        print(f"[Sample {i+1}] Prompt: {prompt[:60]}...")
+
+        response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}],
             temperature=temperature,
@@ -39,22 +67,21 @@ for i in range(samples_to_generate):
 
         completion = response.choices[0].message.content.strip()
 
-        # Format for fine-tuning
         record = {
             "prompt": prompt,
-            "completion": " " + completion  # space prefix for fine-tuning
+            "completion": " " + completion
         }
 
-        # Append to file
         with open(output_file, "a", encoding="utf-8") as f:
             f.write(json.dumps(record) + "\n")
 
-        # Log progress
-        if (i + 1) % 100 == 0:
-            print(f"{i + 1} / {samples_to_generate} samples generated...")
-
-        time.sleep(0.5)  # Avoid rate limit issues
+        print(f"[Sample {i+1}] Completed and saved.")
+        time.sleep(1)  # delay to avoid rate limits
 
     except Exception as e:
-        print(f"Error at sample {i + 1}: {e}")
-        time.sleep(2)  # Wait before retrying
+        print(f"[Sample {i+1}] Error: {e}")
+        print("Retrying in 3 seconds...")
+        time.sleep(3)
+        continue
+
+print("Script finished.")
