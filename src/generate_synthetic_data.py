@@ -2,12 +2,11 @@ import json
 import random
 import time
 from openai import OpenAI
+import os
 
-# Put your OpenAI API key here
-api_key = "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"
 
-# Initialize OpenAI client
-client = OpenAI(api_key=api_key)
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
 
 dietary_restrictions = [
     "vegan", "vegetarian", "pescatarian", "gluten-free", "dairy-free", "nut-free",
